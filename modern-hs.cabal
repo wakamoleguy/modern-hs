@@ -25,7 +25,9 @@ source-repository head
 
 library
   exposed-modules:
+      Ch01
       Lib
+      Lib2
   other-modules:
       Paths_modern_hs
   autogen-modules:
