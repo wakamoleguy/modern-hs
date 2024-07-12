@@ -1,6 +1,7 @@
 module Ch01 where
 
-import Control.Monad (foldM, void)
+import Control.Monad.State (MonadState (get), StateT, evalStateT, get, gets, lift, put)
+import Data.Maybe (fromMaybe)
 import Prelude hiding (exp)
 
 ----------------------------------------
@@ -69,29 +70,32 @@ maxargs = go
 type Env = [(Id, Int)]
 
 interp :: Stm -> IO ()
-interp stm = void $ interpStm (stm, [])
+interp p = evalStateT (interpStm p) []
   where
-    interpStm :: (Stm, Env) -> IO Env
-    interpStm (CompoundStm a b, env) = interpStm (a, env) >>= \env' -> interpStm (b, env')
-    interpStm (AssignStm k exp, env) = interpExp (exp, env) >>= \(v, env') -> pure ((k, v) : env')
-    interpStm (PrintStm exps, env) = foldM go ([], env) exps >>= \(vals, newEnv) -> print vals >> pure newEnv
-      where
-        go (vals, env') exp = interpExp (exp, env') >>= \(val, newEnv) -> pure (vals ++ [val], newEnv)
-
-    interpExp :: (Exp, Env) -> IO (Int, Env)
-    interpExp (IdExp i, env) = pure $ case lookup i env of
-      Just v -> (v, env)
-      Nothing -> (0, env)
-    interpExp (NumExp val, env) = pure (val, env)
-    interpExp (OpExp a op b, env) =
-      interpExp (a, env) >>= \(aval, env') ->
-        interpExp (b, env') >>= \(bval, env'') ->
-          pure
-            ( case op of
-                Plus -> aval + bval
-                Minus -> aval - bval
-                Times -> aval * bval
-                Div -> aval `div` bval,
-              env''
-            )
-    interpExp (EseqExp stm exp, env) = interpStm (stm, env) >>= \env' -> interpExp (exp, env')
+    interpStm :: Stm -> StateT Env IO ()
+    interpStm (CompoundStm a b) = do
+      interpStm a
+      interpStm b
+    interpStm (AssignStm k exp) = do
+      v <- interpExp exp
+      env <- get
+      put ((k, v) : env)
+      return ()
+    interpStm (PrintStm exps) = do
+      vals <- mapM interpExp exps
+      lift $ print vals
+    interpExp :: Exp -> StateT Env IO Int
+    interpExp (IdExp i) = do
+      gets (fromMaybe 0 . lookup i)
+    interpExp (NumExp val) = return val
+    interpExp (OpExp a op b) = do
+      aval <- interpExp a
+      bval <- interpExp b
+      return $ case op of
+        Plus -> aval + bval
+        Minus -> aval - bval
+        Times -> aval * bval
+        Div -> aval `div` bval
+    interpExp (EseqExp s e) = do
+      interpStm s
+      interpExp e

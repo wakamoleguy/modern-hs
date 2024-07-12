@@ -37,6 +37,7 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
+    , mtl >=2.3 && <3
   default-language: Haskell2010
 
 executable modern-hs-exe
@@ -51,6 +52,7 @@ executable modern-hs-exe
   build-depends:
       base >=4.7 && <5
     , modern-hs
+    , mtl >=2.3 && <3
   default-language: Haskell2010
 
 test-suite modern-hs-test
@@ -66,4 +68,5 @@ test-suite modern-hs-test
   build-depends:
       base >=4.7 && <5
     , modern-hs
+    , mtl >=2.3 && <3
   default-language: Haskell2010
